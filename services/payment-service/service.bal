@@ -5,6 +5,7 @@
 //          produces payments.completed | payments.failed | payments.refunded
 //
 //  Simulation rules (configurable):
+//   * amount <= 0                              -> FAILED (INVALID_AMOUNT)
 //   * amount > maxTransactionAmount           -> FAILED (LIMIT_EXCEEDED)
 //   * random() < failureRate (CARD / WALLET)   -> FAILED (CARD_DECLINED)
 //   * CASH                                     -> COMPLETED (cash on delivery)
@@ -77,6 +78,14 @@ isolated service /payments on httpListener {
         return from PaymentSummary s in rows select s;
     }
 
+    isolated resource function get [string paymentId]() returns Payment|http:NotFound|error {
+        Payment|sql:Error p = db->queryRow(sql:queryConcat(paymentSelect(), ` WHERE id = ${paymentId}`));
+        if p is sql:NoRowsError {
+            return errNotFound(string `No payment with id ${paymentId}`);
+        }
+        return p;
+    }
+
     isolated resource function get orders/[string orderId]() returns Payment|http:NotFound|error {
         Payment|sql:Error p = db->queryRow(sql:queryConcat(paymentSelect(), ` WHERE order_id = ${orderId}`));
         if p is sql:NoRowsError {
@@ -134,7 +143,10 @@ isolated function processPayment(PaymentRequestedEvent req) returns error? {
     string status = "COMPLETED";
     string? reason = ();
     string? txnRef = ();
-    if req.amount > maxTransactionAmount {
+    if req.amount <= 0d {
+        status = "FAILED";
+        reason = "INVALID_AMOUNT: amount must be greater than zero";
+    } else if req.amount > maxTransactionAmount {
         status = "FAILED";
         reason = string `LIMIT_EXCEEDED: amount N$${req.amount} exceeds N$${maxTransactionAmount}`;
     } else if req.paymentMethod != "CASH" && random:createDecimal() < failureRate {
