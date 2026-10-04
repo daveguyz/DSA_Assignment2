@@ -14,7 +14,7 @@ Dredleen So-Oabes  223052558
 Saara Salomo 224041320
 Ellen De Wet 222033266
 Magdalena Johannes 222134836
-Eliyno D C Gaeb 218123116
+Eliyno D.C Gaeb 218123116
 Ndilimeke Frans 224041525
 
 
