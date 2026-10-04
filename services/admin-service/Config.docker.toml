@@ -1,0 +1,22 @@
+# Runtime configuration used inside Docker (copied to /app/Config.toml).
+# Local 'bal run' uses the defaults in the code (Kafka localhost:29092, MySQL localhost:3307).
+httpPort = 9097
+kafkaBootstrap = "kafka:9092"
+dbHost = "mysql"
+dbPort = 3306
+
+[monitoredServices]
+customer-service = "http://customer-service:9091"
+restaurant-service = "http://restaurant-service:9092"
+order-service = "http://order-service:9093"
+payment-service = "http://payment-service:9094"
+delivery-service = "http://delivery-service:9095"
+notification-service = "http://notification-service:9096"
+
+[ballerina.observe]
+metricsEnabled = true
+metricsReporter = "prometheus"
+
+[ballerinax.prometheus]
+host = "0.0.0.0"
+port = 9797

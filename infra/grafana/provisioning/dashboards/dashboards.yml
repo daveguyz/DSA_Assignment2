@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: namdeliver
+    folder: NamDeliver
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards

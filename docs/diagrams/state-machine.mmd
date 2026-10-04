@@ -1,0 +1,11 @@
+stateDiagram-v2
+  [*] --> CREATED: POST /orders
+  CREATED --> CONFIRMED: payments.completed
+  CREATED --> CANCELLED: orders.rejected / payments.failed / customer cancel
+  CONFIRMED --> PREPARING: kitchen.preparing
+  CONFIRMED --> CANCELLED: customer cancel (refund)
+  PREPARING --> READY: kitchen.ready
+  READY --> OUT_FOR_DELIVERY: delivery.picked_up
+  OUT_FOR_DELIVERY --> DELIVERED: delivery.completed
+  DELIVERED --> [*]
+  CANCELLED --> [*]

@@ -1,0 +1,19 @@
+# Runtime configuration used inside Docker (copied to /app/Config.toml).
+# Local 'bal run' uses the defaults in the code (Kafka localhost:29092, MySQL localhost:3307).
+httpPort = 9094
+kafkaBootstrap = "kafka:9092"
+dbHost = "mysql"
+dbPort = 3306
+processingDelaySeconds = 1.0
+# probability (0.0-1.0) of a random CARD/WALLET decline - set e.g. 0.1 to demo failures
+failureRate = 0.0
+# orders above this amount are declined (LIMIT_EXCEEDED) - easy way to demo the failure path
+maxTransactionAmount = 1500.00
+
+[ballerina.observe]
+metricsEnabled = true
+metricsReporter = "prometheus"
+
+[ballerinax.prometheus]
+host = "0.0.0.0"
+port = 9797

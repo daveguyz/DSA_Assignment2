@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NamEats - Windhoek food delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>NamEats</h1>
+      <p>Kapana to your door, across Windhoek</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="customer">Customer</button>
+    <button class="tab" data-tab="restaurant">Restaurant</button>
+    <button class="tab" data-tab="driver">Driver</button>
+    <button class="tab" data-tab="admin">Admin</button>
+  </nav>
+  <div id="surge" class="surge" title="Live surge multiplier from the Order Service"></div>
+</header>
+
+<main>
+  <!-- ================= CUSTOMER ================= -->
+  <section id="tab-customer" class="panel active">
+    <div class="toolbar">
+      <label>Customer <select id="c-customer"></select></label>
+      <label>Deliver to <select id="c-address"></select></label>
+      <label>Pay with
+        <select id="c-payment">
+          <option value="CARD">Card</option>
+          <option value="WALLET">Wallet</option>
+          <option value="CASH">Cash on delivery</option>
+        </select>
+      </label>
+    </div>
+    <div class="grid-3">
+      <div class="col">
+        <h2>Restaurants</h2>
+        <div id="c-restaurants" class="list"></div>
+      </div>
+      <div class="col">
+        <h2 id="c-menu-title">Menu</h2>
+        <div id="c-menu" class="list"><p class="muted">Pick a restaurant to see its live menu and stock.</p></div>
+        <div id="c-cart" class="cart"></div>
+      </div>
+      <div class="col">
+        <h2>My orders</h2>
+        <div id="c-orders" class="list"></div>
+      </div>
+    </div>
+    <div id="c-track" class="track hidden">
+      <div class="track-head">
+        <h2 id="t-title">Tracking</h2>
+        <button id="t-cancel" class="btn ghost hidden">Cancel order</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <ol id="t-timeline" class="timeline"></ol>
+          <div id="t-bill" class="bill"></div>
+          <h3>Messages</h3>
+          <div id="t-notes" class="feed small"></div>
+        </div>
+        <div><div id="t-map" class="map"></div><p id="t-eta" class="muted"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RESTAURANT ================= -->
+  <section id="tab-restaurant" class="panel">
+    <div class="toolbar">
+      <label>Restaurant <select id="r-restaurant"></select></label>
+      <button id="r-toggle" class="btn"></button>
+      <span id="r-open" class="pill"></span>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h2>Kitchen queue</h2>
+        <div id="r-queue" class="list"></div>
+      </div>
+      <div>
+        <h2>Inventory</h2>
+        <table class="table" id="r-stock"></table>
+        <h3>Alerts</h3>
+        <div id="r-notes" class="feed small"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DRIVER ================= -->
+  <section id="tab-driver" class="panel">
+    <div class="toolbar">
+      <label>Driver <select id="d-driver"></select></label>
+      <button id="d-online" class="btn">Go online</button>
+      <button id="d-offline" class="btn ghost">Go offline</button>
+      <span id="d-status" class="pill"></span>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h2>Current job</h2>
+        <div id="d-job" class="list"></div>
+        <h3>Alerts</h3>
+        <div id="d-notes" class="feed small"></div>
+      </div>
+      <div><div id="d-map" class="map"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN ================= -->
+  <section id="tab-admin" class="panel">
+    <div id="a-kpis" class="kpis"></div>
+    <div class="grid-2">
+      <div>
+        <h2>Restaurant statistics</h2>
+        <table class="table" id="a-restaurants"></table>
+        <h2>Delivery performance</h2>
+        <table class="table" id="a-drivers"></table>
+      </div>
+      <div>
+        <h2>Platform health</h2>
+        <div id="a-health" class="health"></div>
+        <h2>Fleet</h2>
+        <div id="a-fleet" class="health"></div>
+        <h2>Live notification stream</h2>
+        <div id="a-feed" class="feed"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

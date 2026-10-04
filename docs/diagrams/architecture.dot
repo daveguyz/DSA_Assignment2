@@ -1,0 +1,41 @@
+digraph G {
+graph [rankdir=TB, nodesep=0.25, ranksep=0.5, fontname="Helvetica", bgcolor="white", pad=0.3, newrank=true];
+node [shape=box, style="rounded,filled", fillcolor="#f4ead8", color="#c8642b", fontname="Helvetica", fontsize=11, penwidth=1.4];
+edge [color="#231d18", arrowsize=0.7, fontname="Helvetica", fontsize=9, fontcolor="#2e6f9e"];
+ui [label="Web UI  (customer / restaurant / driver / admin)\nnginx :8080 - static files + /api/* gateway", fillcolor="#231d18", fontcolor="#f4ead8", width=8];
+side [label="Prometheus :9090 + Grafana :3000  |  Kafka UI :8085", fillcolor="#d6e6f2", color="#2e6f9e"];
+{rank=same; ui; side;}
+subgraph cluster_cs { label=""; style="dashed"; color="#c8642b"; cs [label="Customer\n:9091", fillcolor="#f4ead8"]; csdb [label="customer_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; cs -> csdb [dir=both, color="#4f7a3a"]; }
+ui -> cs [color="#6c6157"];
+csdb -> kafka [style=invis];
+cs -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_rs { label=""; style="dashed"; color="#c8642b"; rs [label="Restaurant\n:9092\nmenus, stock, hours", fillcolor="#f4ead8"]; rsdb [label="restaurant_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; rs -> rsdb [dir=both, color="#4f7a3a"]; }
+ui -> rs [color="#6c6157"];
+rsdb -> kafka [style=invis];
+rs -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_os { label=""; style="dashed"; color="#c8642b"; os [label="Order\n:9093\nstate machine, surge", fillcolor="#f0a35e"]; osdb [label="order_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; os -> osdb [dir=both, color="#4f7a3a"]; }
+ui -> os [color="#6c6157"];
+osdb -> kafka [style=invis];
+os -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_ps { label=""; style="dashed"; color="#c8642b"; ps [label="Payment\n:9094\nsimulated gateway", fillcolor="#f4ead8"]; psdb [label="payment_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; ps -> psdb [dir=both, color="#4f7a3a"]; }
+ui -> ps [color="#6c6157"];
+psdb -> kafka [style=invis];
+ps -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_ds { label=""; style="dashed"; color="#c8642b"; ds [label="Delivery\n:9095\ndispatch, Dijkstra, GPS sim", fillcolor="#f4ead8"]; dsdb [label="delivery_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; ds -> dsdb [dir=both, color="#4f7a3a"]; }
+ui -> ds [color="#6c6157"];
+dsdb -> kafka [style=invis];
+ds -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_ns { label=""; style="dashed"; color="#c8642b"; ns [label="Notification\n:9096\nSMS / EMAIL / PUSH", fillcolor="#f4ead8"]; nsdb [label="notification_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; ns -> nsdb [dir=both, color="#4f7a3a"]; }
+ui -> ns [color="#6c6157"];
+nsdb -> kafka [style=invis];
+ns -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+subgraph cluster_as { label=""; style="dashed"; color="#c8642b"; as [label="Admin\n:9097\nCQRS reports", fillcolor="#f4ead8"]; asdb [label="admin_db", shape=cylinder, fillcolor="#dcebd2", color="#4f7a3a"]; as -> asdb [dir=both, color="#4f7a3a"]; }
+ui -> as [color="#6c6157"];
+asdb -> kafka [style=invis];
+as -> kafka [dir=both, penwidth=2.2, color="#c8642b"];
+{rank=same; cs; rs; os; ps; ds; ns; as;}
+{rank=same; csdb; rsdb; osdb; psdb; dsdb; nsdb; asdb;}
+kafka [label="Apache Kafka 3.8 (KRaft)  -  17 topics, 3-6 partitions each, message key = orderId (per-order ordering)\norders.created  orders.validated  orders.rejected  orders.confirmed  orders.cancelled  orders.status.changed\npayments.requested  payments.completed  payments.failed  payments.refunded  kitchen.preparing  kitchen.ready\ndelivery.assigned  delivery.picked_up  delivery.completed  delivery.location.updated  dlq.events", fillcolor="#231d18", fontcolor="#f0a35e", width=11];
+os -> cs [style=dashed, color="#2e6f9e", constraint=false, xlabel="sync address lookup"];
+os -> ds [style=dashed, color="#2e6f9e", constraint=false, xlabel="sync driver supply"];
+}

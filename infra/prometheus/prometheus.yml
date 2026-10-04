@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: namdeliver-services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - customer-service:9797
+          - restaurant-service:9797
+          - order-service:9797
+          - payment-service:9797
+          - delivery-service:9797
+          - notification-service:9797
+          - admin-service:9797

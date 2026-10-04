@@ -1,0 +1,26 @@
+sequenceDiagram
+  autonumber
+  participant C as Customer (UI)
+  participant O as Order Svc
+  participant R as Restaurant Svc
+  participant P as Payment Svc
+  participant D as Delivery Svc
+  participant N as Notification Svc
+  C->>O: POST /orders
+  O-->>R: orders.created
+  R->>R: check hours, lock and reserve stock
+  R-->>O: orders.validated (priced items)
+  O->>O: delivery fee = distance x surge
+  O-->>P: payments.requested
+  P-->>O: payments.completed
+  O-->>R: orders.confirmed (kitchen queue)
+  O-->>D: orders.confirmed
+  D->>D: nearest driver + Dijkstra route
+  D-->>O: delivery.assigned
+  R-->>O: kitchen.preparing / kitchen.ready
+  O-->>D: orders.status.changed (READY)
+  D-->>O: delivery.picked_up
+  D-->>D: delivery.location.updated (GPS sim)
+  D-->>O: delivery.completed
+  O-->>N: orders.status.changed (every step)
+  N->>C: SMS / EMAIL / PUSH
