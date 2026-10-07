@@ -1,197 +1,89 @@
-# =====================================================================
-#  NamDeliver - Distributed Food Delivery Platform (DSA612S Assignment 2)
-#  docker compose up --build        -> everything
-#  UI:          http://localhost:8080
-#  Kafka UI:    http://localhost:8085
-#  Grafana:     http://localhost:3000  (admin / admin)
-#  Prometheus:  http://localhost:9090
-# =====================================================================
-name: namdeliver
-
-x-ballerina-service: &ballerina-service
-  restart: unless-stopped
-  networks: [backend]
-  depends_on:
-    mysql:
-      condition: service_healthy
-    kafka-init:
-      condition: service_completed_successfully
-
 services:
-  # ------------------------------------------------------------ infrastructure
+
+  mongodb:
+    image: mongo:latest
+    container_name: fooddelivery-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - fooddelivery-mongo-data:/data/db
+
   kafka:
-    image: apache/kafka:3.8.0
-    container_name: kafka
-    hostname: kafka
+    image: apache/kafka:4.3.1
+    container_name: fooddelivery-kafka
     ports:
-      - "29092:29092"          # for services run locally with 'bal run'
-    environment:
-      CLUSTER_ID: "P0dzPNbMRf2K6LjPm_wIsA"
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller          # KRaft - no ZooKeeper
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"        # topics are managed explicitly
-      KAFKA_NUM_PARTITIONS: 3
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
-      interval: 10s
-      timeout: 10s
-      retries: 12
-      start_period: 20s
-    networks: [backend]
+      - "9092:9092"
 
-  kafka-init:
-    image: apache/kafka:3.8.0
-    container_name: kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      BOOTSTRAP: kafka:9092
-    volumes:
-      - ./infra/kafka/create-topics.sh:/scripts/create-topics.sh:ro
-    entrypoint: ["sh", "/scripts/create-topics.sh"]
-    restart: "no"
-    networks: [backend]
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    ports:
-      - "8085:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: namdeliver
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks: [backend]
-
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    ports:
-      - "3307:3306"            # 3307 on the host avoids clashing with a local MySQL
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      TZ: UTC
-    volumes:
-      - ./infra/mysql:/docker-entrypoint-initdb.d:ro
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      # TCP ping only succeeds after the init scripts finished and the real server started
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -prootpass --silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 20s
-    networks: [backend]
-
-  # ------------------------------------------------------------ microservices
   customer-service:
-    <<: *ballerina-service
-    build: ./services/customer-service
+    image: customer_service:latest
     container_name: customer-service
-    ports: ["9091:9091"]
+    ports:
+      - "8081:8081"
+    networks:
+      - default
+    volumes:
+      - ./customer-service/Config.toml:/home/ballerina/Config.toml
 
   restaurant-service:
-    <<: *ballerina-service
-    build: ./services/restaurant-service
+    image: restaurant_service:latest
     container_name: restaurant-service
-    ports: ["9092:9092"]
+    ports:
+      - "8082:8082"
+    networks:
+      - default
+    volumes:
+      - ./restaurant-service/Config.toml:/home/ballerina/Config.toml
 
   order-service:
-    <<: *ballerina-service
-    build: ./services/order-service
+    image: order_service:latest
     container_name: order-service
-    ports: ["9093:9093"]
+    ports:
+      - "8083:8083"
+    networks:
+      - default
+    volumes:
+      - ./order-service/Config.toml:/home/ballerina/Config.toml
 
   payment-service:
-    <<: *ballerina-service
-    build: ./services/payment-service
+    image: payment_service:latest
     container_name: payment-service
-    ports: ["9094:9094"]
+    ports:
+      - "8084:8084"
+    networks:
+      - default
+    volumes:
+      - ./payment-service/Config.toml:/home/ballerina/Config.toml
 
   delivery-service:
-    <<: *ballerina-service
-    build: ./services/delivery-service
+    image: delivery_service:latest
     container_name: delivery-service
-    ports: ["9095:9095"]
+    ports:
+      - "8085:8085"
+    networks:
+      - default
+    volumes:
+      - ./delivery-service/Config.toml:/home/ballerina/Config.toml
 
   notification-service:
-    <<: *ballerina-service
-    build: ./services/notification-service
+    image: notification_service:latest
     container_name: notification-service
-    ports: ["9096:9096"]
+    ports:
+      - "8086:8086"
+    networks:
+      - default
+    volumes:
+      - ./notification-service/Config.toml:/home/ballerina/Config.toml
 
   admin-service:
-    <<: *ballerina-service
-    build: ./services/admin-service
+    image: admin_service:latest
     container_name: admin-service
-    ports: ["9097:9097"]
-
-  # ------------------------------------------------------------ web UI / gateway
-  web:
-    image: nginx:1.27-alpine
-    container_name: web
     ports:
-      - "8080:80"
+      - "8087:8087"
+    networks:
+      - default
     volumes:
-      - ./ui:/usr/share/nginx/html:ro
-      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - customer-service
-      - restaurant-service
-      - order-service
-      - payment-service
-      - delivery-service
-      - notification-service
-      - admin-service
-    restart: unless-stopped
-    networks: [backend]
-
-  # ------------------------------------------------------------ observability
-  prometheus:
-    image: prom/prometheus:v2.54.1
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    networks: [backend]
-
-  grafana:
-    image: grafana/grafana:11.2.0
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-    volumes:
-      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
-    depends_on:
-      - prometheus
-    networks: [backend]
-
-networks:
-  backend:
-    driver: bridge
+      - ./admin-service/Config.toml:/home/ballerina/Config.toml
 
 volumes:
-  kafka-data:
-  mysql-data:
+  fooddelivery-mongo-data:
+    name: fooddelivery-mongo-data
