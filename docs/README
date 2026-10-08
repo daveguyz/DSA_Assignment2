@@ -1,0 +1,107 @@
+# NamDeliver
+
+A food delivery platform for Namibia, built as a set of Ballerina microservices that talk to each other through Kafka events. Local restaurants and independent drivers can serve customers reliably, even at peak meal times.
+
+For the full design (state machine, Kafka topics, data model), see the design document.
+
+## Goals
+
+- **Loose coupling:** each service owns its own data. Services share events, not tables.
+- **Reliability:** no lost or double-processed orders, even if a service crashes.
+- **Scalability:** partitioned Kafka topics and consumer groups let each service scale.
+- **Observability:** every service has health checks and Prometheus metrics.
+
+## Services
+
+| Service | Port | What it does |
+|---|---|---|
+| customer-service | 8081 | Customer accounts, addresses, order history |
+| restaurant-service | 8082 | Restaurants, menus, stock, opening hours, kitchen queue |
+| order-service | 8083 | Orders, order status flow, pricing (including surge pricing) |
+| payment-service | 8084 | Payments and refunds |
+| delivery-service | 8085 | Drivers, dispatch, route planning, live tracking |
+| notification-service | 8086 | Alerts to customers, restaurants and admins |
+| admin-service | 8087 | Reports and system health |
+
+The web UI and API gateway (nginx) is on port **8080**. Every API call goes through `http://localhost:8080/api/<resource>`.
+
+## Tech stack
+
+- **Ballerina** for all services
+- **Kafka** for events between services
+- **Database** per service (see the design document for the schemas)
+- **nginx** for the web UI and API gateway
+- **Prometheus + Grafana** for metrics (each service exposes metrics on port 9797)
+- **Docker Compose** to run everything
+
+## How it works (short version)
+
+Placing an order starts a chain of events:
+
+1. **Order** service creates the order and publishes `orders.created`.
+2. **Restaurant** service checks the stock and publishes `orders.validated` (or `orders.rejected`).
+3. **Payment** service charges the customer and publishes `payments.completed` (or `payments.failed`).
+4. **Order** service confirms the order. The kitchen starts cooking and **Delivery** assigns the nearest driver.
+5. The order moves through: `CREATED -> CONFIRMED -> PREPARING -> READY -> OUT_FOR_DELIVERY -> DELIVERED`.
+
+If something fails later, earlier steps are undone. For example, if an order is cancelled, the restaurant puts the stock back, the payment is refunded, and the driver is released.
+
+## Extra features
+
+- **Surge pricing:** the delivery fee goes up when there are many orders and few drivers, and during peak meal times.
+- **Route optimisation:** the fastest route is found with Dijkstra's algorithm on a map of Windhoek suburbs.
+- **Nearest-driver dispatch:** the closest available driver gets the job, and two orders can never take the same driver.
+- **Live driver tracking:** the driver's position updates on a map in the web UI.
+
+## Requirements
+
+- Docker and Docker Compose
+- Ballerina (to build the service images)
+
+## How to run
+
+1. Clone the repository:
+   ```
+   git clone <repository-url>
+   cd <repository-folder>
+   ```
+2. Check each service has its `Config.toml`. Inside Docker, use container names as hosts (for example `kafka`, and the database container name), not `localhost`.
+3. Build the service images (names must match `docker-compose.yml`, for example `customer_service:latest`).
+4. Start everything:
+   ```
+   docker compose up
+   ```
+5. Open the web UI at `http://localhost:8080`.
+6. Stop everything:
+   ```
+   docker compose down
+   ```
+   Add `-v` to also delete the stored data.
+
+## Example API calls
+
+```
+# List restaurants
+curl http://localhost:8080/api/restaurants
+
+# Current surge multiplier
+curl http://localhost:8080/api/pricing/surge
+
+# Check platform health
+curl http://localhost:8080/api/admin/system/health
+```
+
+## Common problems
+
+- **A service starts, then crashes:** it started before Kafka or the database was ready. Run `docker compose up` again, or add `depends_on` and `restart: on-failure`.
+- **Cannot connect to Kafka:** inside Docker, services must use the Kafka container's internal address, not `localhost`.
+- **Cannot connect to the database:** use the database container name as the host in `Config.toml`.
+- **Image not found:** the service images are built locally, so build them first.
+- **See what went wrong:** `docker compose logs <service-name>`
+
+## Known limitations
+
+- One Kafka broker and one database server, to fit on a laptop.
+- No login or authentication yet.
+- Events are published inside the database transaction but not fully atomically. A transactional outbox would fix this.
+- Opening hours that run past midnight are not supported.
